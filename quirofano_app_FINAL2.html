@@ -412,7 +412,24 @@ async function apiPost(body) {
 async function cargarTodo() {
   try {
     const res = await apiGet({ action: 'getAll' });
-    DB = (res.rows || []).map(r => ({ ...r, fecha: String(r.fecha || '').slice(0,10) }));
+    DB = (res.rows || []).map(r => {
+      const fixFecha = v => String(v || '').slice(0,10);
+      const fixHora = v => {
+        const s = String(v || '');
+        if (s.includes('T')) {
+          const t = s.split('T')[1] || '';
+          return t.slice(0,5);
+        }
+        if (s.includes(':')) return s.slice(0,5);
+        return s;
+      };
+      return { ...r,
+        fecha: fixFecha(r.fecha),
+        horaProg: fixHora(r.horaProg),
+        horaInicio: fixHora(r.horaInicio),
+        horaFin: fixHora(r.horaFin)
+      };
+    });
     setConn(true);
   } catch(e) {
     setConn(false);
