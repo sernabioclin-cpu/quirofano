@@ -415,11 +415,22 @@ async function cargarTodo() {
     DB = (res.rows || []).map(r => {
       const fixFecha = v => String(v || '').slice(0,10);
       const fixHora = v => {
-        const s = String(v || '');
+        if (v === '' || v === null || v === undefined) return '';
+        // Número decimal (formato serial de Sheets: 0.4375 = 10:30)
+        const n = parseFloat(v);
+        if (!isNaN(n) && String(v).indexOf(':') === -1 && String(v).indexOf('T') === -1) {
+          const totalMin = Math.round(n * 1440);
+          const hh = Math.floor(totalMin / 60) % 24;
+          const mm = totalMin % 60;
+          return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+        }
+        const s = String(v);
+        // Formato ISO con T: 2026-05-30T14:30:00.000Z
         if (s.includes('T')) {
           const t = s.split('T')[1] || '';
           return t.slice(0,5);
         }
+        // Ya viene como HH:MM
         if (s.includes(':')) return s.slice(0,5);
         return s;
       };
@@ -675,7 +686,7 @@ function renderDash() {
   const suspendidas= data.filter(r => r.resultado === 'suspendida');
   const pendientes = data.filter(r => r.estado === 'pendiente');
   const pctSusp    = prog.length ? Math.round(suspendidas.filter(r => r.tipo === 'programada').length / prog.length * 100) : null;
-  const durs       = realizadas.map(r => durMin(r.horaInicio, r.horaFin)).filter(d => d && d > 0 && d < 600);
+  const durs       = realizadas.filter(r => r.horaInicio && r.horaFin && r.horaInicio !== r.horaFin).map(r => durMin(r.horaInicio, r.horaFin)).filter(d => d && d > 0 && d < 600);
   const promDur    = durs.length ? Math.round(durs.reduce((a,b) => a+b, 0) / durs.length) : null;
 
   document.getElementById('dash-sub').textContent =
