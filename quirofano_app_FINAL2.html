@@ -416,19 +416,22 @@ async function cargarTodo() {
       const fixFecha = v => String(v || '').slice(0,10);
       const fixHora = v => {
         if (v === '' || v === null || v === undefined) return '';
+        const s = String(v);
+        // Formato ISO con T: 2026-05-30T14:30:00.000Z — convertir UTC a hora local
+        if (s.includes('T')) {
+          const d = new Date(s);
+          if (!isNaN(d)) {
+            return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+          }
+          return s.split('T')[1].slice(0,5);
+        }
         // Número decimal (formato serial de Sheets: 0.4375 = 10:30)
         const n = parseFloat(v);
-        if (!isNaN(n) && String(v).indexOf(':') === -1 && String(v).indexOf('T') === -1) {
+        if (!isNaN(n) && s.indexOf(':') === -1) {
           const totalMin = Math.round(n * 1440);
           const hh = Math.floor(totalMin / 60) % 24;
           const mm = totalMin % 60;
           return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
-        }
-        const s = String(v);
-        // Formato ISO con T: 2026-05-30T14:30:00.000Z
-        if (s.includes('T')) {
-          const t = s.split('T')[1] || '';
-          return t.slice(0,5);
         }
         // Ya viene como HH:MM
         if (s.includes(':')) return s.slice(0,5);
