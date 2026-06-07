@@ -5,7 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registro Quirúrgico — Hospital</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
+const PIN_CORRECTO = '2710';
+let pinBtnRef = null;
+let jefeBloqueado = true;
+
+function pedirPIN(btn) {
+  if (!jefeBloqueado) {
+    switchPage('jefe', btn);
+    return;
+  }
+  pinBtnRef = btn;
+  document.getElementById('pin-modal').style.display = 'flex';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').style.display = 'none';
+  setTimeout(() => document.getElementById('pin-input').focus(), 100);
+}
+
+function validarPIN() {
+  const val = document.getElementById('pin-input').value;
+  if (val === PIN_CORRECTO) {
+    jefeBloqueado = false;
+    cerrarPIN();
+    switchPage('jefe', pinBtnRef);
+  } else {
+    document.getElementById('pin-error').style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+function cerrarPIN() {
+  document.getElementById('pin-modal').style.display = 'none';
+}
+
+</script>
 <style>
   :root {
     --green: #007A4D;
@@ -126,7 +160,7 @@
 <nav class="topbar">
   <div class="topbar-brand">
     <i class="ti ti-scalpel" style="font-size:18px"></i>
-    <span>Quirófano</span>
+    <span style="font-size:12px;line-height:1.2">Servicios de Salud IMSS Bienestar<br><strong>HGR Reynosa Dr. José María Cantú Garza</strong></span>
   </div>
   <button class="nav-tab active" onclick="switchPage('asistente',this)">
     <i class="ti ti-calendar-event"></i> Asistente
@@ -134,7 +168,7 @@
   <button class="nav-tab" onclick="switchPage('medico',this)">
     <i class="ti ti-clipboard-check"></i> Médico
   </button>
-  <button class="nav-tab" onclick="switchPage('jefe',this)">
+  <button class="nav-tab" id="btn-jefe" onclick="pedirPIN(this)">
     <i class="ti ti-chart-bar"></i> Jefe
   </button>
   <div class="topbar-right">
@@ -201,7 +235,7 @@
     <table class="tbl" id="tabla-prog">
       <thead><tr>
         <th>Hora</th><th>Qx</th><th>Paciente</th><th>Procedimiento</th>
-        <th>Especialidad</th><th>Tipo</th><th>Estado</th><th></th>
+        <th>Especialidad</th><th>Tipo</th><th>Estado</th>
       </tr></thead>
       <tbody id="tbody-prog">
         <tr><td colspan="8" class="empty-msg">Cargando...</td></tr>
@@ -270,7 +304,7 @@
       <div style="font-size:14px;font-weight:600;margin-bottom:1rem" id="cf-titulo"></div>
       <div class="form-grid g2">
         <div><label>Hora real de ingreso a quirófano</label><input type="time" id="cf-inicio"></div>
-        <div><label>Hora de salida a recuperación</label><input type="time" id="cf-fin"></div>
+        <div><label>Hora de salida de quirófano</label><input type="time" id="cf-fin"></div>
       </div>
       <div class="form-grid g2">
         <div>
@@ -416,24 +450,7 @@ async function cargarTodo() {
       const fixFecha = v => String(v || '').slice(0,10);
       const fixHora = v => {
         if (v === '' || v === null || v === undefined) return '';
-        const s = String(v);
-        // Formato ISO con T: 2026-05-30T14:30:00.000Z — convertir UTC a hora local
-        if (s.includes('T')) {
-          const d = new Date(s);
-          if (!isNaN(d)) {
-            return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-          }
-          return s.split('T')[1].slice(0,5);
-        }
-        // Número decimal (formato serial de Sheets: 0.4375 = 10:30)
-        const n = parseFloat(v);
-        if (!isNaN(n) && s.indexOf(':') === -1) {
-          const totalMin = Math.round(n * 1440);
-          const hh = Math.floor(totalMin / 60) % 24;
-          const mm = totalMin % 60;
-          return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
-        }
-        // Ya viene como HH:MM
+        const s = String(v).trim();
         if (s.includes(':')) return s.slice(0,5);
         return s;
       };
@@ -557,7 +574,7 @@ function cargarTabla() {
       <td style="color:var(--gray-text);font-size:12px">${r.especialidad}</td>
       <td>${tipo}</td>
       <td>${estado}</td>
-      <td><button class="btn btn-outline btn-sm btn-danger" onclick="eliminar('${r.id}')"><i class="ti ti-trash"></i></button></td>
+      
     </tr>`;
   }).join('');
 }
@@ -689,7 +706,7 @@ function renderDash() {
   const suspendidas= data.filter(r => r.resultado === 'suspendida');
   const pendientes = data.filter(r => r.estado === 'pendiente');
   const pctSusp    = prog.length ? Math.round(suspendidas.filter(r => r.tipo === 'programada').length / prog.length * 100) : null;
-  const durs       = realizadas.filter(r => r.horaInicio && r.horaFin && r.horaInicio !== r.horaFin).map(r => durMin(r.horaInicio, r.horaFin)).filter(d => d && d > 0 && d < 600);
+  const durs       = realizadas.filter(r => r.horaInicio && r.horaFin && r.horaInicio !== r.horaFin && r.resultado === 'realizada').map(r => durMin(r.horaInicio, r.horaFin)).filter(d => d && d > 0 && d < 600);
   const promDur    = durs.length ? Math.round(durs.reduce((a,b) => a+b, 0) / durs.length) : null;
 
   document.getElementById('dash-sub').textContent =
@@ -810,6 +827,60 @@ cargarTodo().then(() => {
     
   }
 });
+
+const PIN_CORRECTO = '2710';
+let pinBtnRef = null;
+let jefeBloqueado = true;
+
+function pedirPIN(btn) {
+  if (!jefeBloqueado) {
+    switchPage('jefe', btn);
+    return;
+  }
+  pinBtnRef = btn;
+  document.getElementById('pin-modal').style.display = 'flex';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').style.display = 'none';
+  setTimeout(() => document.getElementById('pin-input').focus(), 100);
+}
+
+function validarPIN() {
+  const val = document.getElementById('pin-input').value;
+  if (val === PIN_CORRECTO) {
+    jefeBloqueado = false;
+    cerrarPIN();
+    switchPage('jefe', pinBtnRef);
+  } else {
+    document.getElementById('pin-error').style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+function cerrarPIN() {
+  document.getElementById('pin-modal').style.display = 'none';
+}
+
 </script>
+
+<div style="position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:10px;color:#bbb;padding:4px 0;background:rgba(255,255,255,0.85);border-top:1px solid #eee;z-index:50;pointer-events:none">
+  Aplicación desarrollada por Q.F.B. Protacio Serna Ramírez para el Departamento de Quirófano del Hospital General Reynosa Dr. José María Cantú Garza
+</div>
+
+<div id="pin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:2rem;width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <div style="font-size:16px;font-weight:600;margin-bottom:4px;color:#1a1a18">Acceso restringido</div>
+    <div style="font-size:13px;color:#5F5E5A;margin-bottom:1.25rem">Dashboard — solo personal autorizado</div>
+    <label style="font-size:12px;color:#5F5E5A;display:block;margin-bottom:4px">PIN de acceso</label>
+    <input type="password" id="pin-input" maxlength="8" placeholder="••••••••"
+      style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:18px;letter-spacing:4px;text-align:center;margin-bottom:12px"
+      onkeydown="if(event.key==='Enter')validarPIN()">
+    <div id="pin-error" style="color:#E24B4A;font-size:12px;margin-bottom:8px;display:none">PIN incorrecto. Intenta de nuevo.</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="validarPIN()" style="flex:1;background:#007A4D;color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500">Entrar</button>
+      <button onclick="cerrarPIN()" style="flex:1;background:#f1efe8;color:#5F5E5A;border:1px solid #ddd;padding:10px;border-radius:8px;cursor:pointer;font-size:14px">Cancelar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
