@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro Quirúrgico — Hospital</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
+const PIN_CORRECTO = '2710';
+let pinBtnRef = null;
+let jefeBloqueado = true;
+
+function pedirPIN(btn) {
+  if (!jefeBloqueado) {
+    switchPage('jefe', btn);
+    return;
+  }
+  pinBtnRef = btn;
+  document.getElementById('pin-modal').style.display = 'flex';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').style.display = 'none';
+  setTimeout(() => document.getElementById('pin-input').focus(), 100);
+}
+
+function validarPIN() {
+  const val = document.getElementById('pin-input').value;
+  if (val === PIN_CORRECTO) {
+    jefeBloqueado = false;
+    cerrarPIN();
+    switchPage('jefe', pinBtnRef);
+  } else {
+    document.getElementById('pin-error').style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+function cerrarPIN() {
+  document.getElementById('pin-modal').style.display = 'none';
+}
+
+</script>
+<style>
+  :root {
+    --green: #007A4D;
+    --green-light: #E1F5EE;
+    --green-mid: #1D9E75;
+    --green-dark: #085041;
+    --blue-light: #E6F1FB;
+    --blue-mid: #378ADD;
+    --blue-dark: #0C447C;
+    --amber-light: #FAEEDA;
+    --amber-mid: #BA7517;
+    --red-light: #FCEBEB;
+    --red-mid: #E24B4A;
+    --red-dark: #791F1F;
+    --gray-bg: #F8F8F6;
+    --gray-border: #E0DED8;
+    --gray-text: #5F5E5A;
+    --text: #1a1a18;
+    --white: #ffffff;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+
+  /* NAV */
+  .topbar { background: var(--white); border-bottom: 1px solid var(--gray-border); padding: 0 1.5rem; display: flex; align-items: center; gap: 0; position: sticky; top: 0; z-index: 100; }
+  .topbar-brand { font-size: 15px; font-weight: 600; color: var(--green); padding: 1rem 1.5rem 1rem 0; border-right: 1px solid var(--gray-border); margin-right: 1rem; display: flex; align-items: center; gap: 8px; }
+  .nav-tab { padding: 1rem 1.25rem; font-size: 13px; cursor: pointer; border: none; background: none; color: var(--gray-text); border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 6px; transition: color 0.15s; }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--green); border-bottom-color: var(--green); font-weight: 500; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+  .status-dot.ok { background: var(--green-mid); }
+  .status-dot.err { background: var(--red-mid); }
+  #conn-label { font-size: 12px; color: var(--gray-text); }
+
+  /* LAYOUT */
+  .page { display: none; max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--white); border: 1px solid var(--gray-border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; color: var(--text); }
+
+  /* FORMS */
+  .form-grid { display: grid; gap: 12px; margin-bottom: 12px; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: 1fr 1fr 1fr; }
+  .g1 { grid-template-columns: 1fr; }
+  label { font-size: 12px; color: var(--gray-text); display: block; margin-bottom: 4px; }
+  input[type=text], input[type=date], input[type=time], select, textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--gray-border); border-radius: var(--radius);
+    font-size: 13px; background: var(--white); color: var(--text); outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--green-mid); box-shadow: 0 0 0 3px rgba(29,158,117,0.12); }
+  textarea { height: 64px; resize: vertical; }
+
+  /* BUTTONS */
+  .btn { padding: 8px 16px; border-radius: var(--radius); border: 1px solid; cursor: pointer; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-green { background: var(--green); color: var(--white); border-color: var(--green); }
+  .btn-outline { background: var(--white); color: var(--gray-text); border-color: var(--gray-border); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-danger { background: var(--red-light); color: var(--red-dark); border-color: #f09595; }
+  .btn-row { display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .b-prog { background: var(--blue-light); color: var(--blue-dark); }
+  .b-urg { background: var(--amber-light); color: var(--amber-mid); }
+  .b-real { background: var(--green-light); color: var(--green-dark); }
+  .b-susp { background: var(--red-light); color: var(--red-dark); }
+  .b-pend { background: #f1efe8; color: #5F5E5A; }
+
+  /* TABLES */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tbl th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--gray-text); border-bottom: 1px solid var(--gray-border); text-transform: uppercase; letter-spacing: 0.04em; }
+  .tbl td { padding: 8px 10px; border-bottom: 1px solid #f1efe8; vertical-align: middle; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr:hover td { background: #fafaf8; }
+
+  /* METRICS */
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+  .metric { background: var(--white); border: 1px solid var(--gray-border); border-radius: var(--radius-lg); padding: 1rem; }
+  .metric-label { font-size: 11px; color: var(--gray-text); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .metric-val { font-size: 26px; font-weight: 600; line-height: 1; }
+  .metric-sub { font-size: 11px; color: var(--gray-text); margin-top: 4px; }
+  .mv-ok { color: var(--green-mid); }
+  .mv-warn { color: var(--amber-mid); }
+  .mv-bad { color: var(--red-mid); }
+
+  /* MISC */
+  .tag-qx { display: inline-block; background: var(--green-light); color: var(--green-dark); padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-text); margin: 1.5rem 0 0.5rem; }
+  .divider { border: none; border-top: 1px solid var(--gray-border); margin: 1.25rem 0; }
+  .empty-msg { font-size: 13px; color: var(--gray-text); padding: 1rem 0; text-align: center; }
+  .cierre-card { background: #fafaf8; border: 1px solid var(--gray-border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: var(--white); padding: 10px 18px; border-radius: var(--radius-lg); font-size: 13px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .chart-wrap { position: relative; height: 220px; margin-top: 8px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--gray-text); margin-bottom: 8px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+  @media (max-width: 600px) {
+    .g2, .g3 { grid-template-columns: 1fr; }
+    .metrics-grid { grid-template-columns: 1fr 1fr; }
+    .topbar-brand span { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<nav class="topbar">
+  <div class="topbar-brand">
+    <i class="ti ti-scalpel" style="font-size:18px"></i>
+    <span style="font-size:12px;line-height:1.2">Servicios de Salud IMSS Bienestar<br><strong>HGR Reynosa Dr. José María Cantú Garza</strong></span>
+  </div>
+  <button class="nav-tab active" onclick="switchPage('asistente',this)">
+    <i class="ti ti-calendar-event"></i> Asistente
+  </button>
+  <button class="nav-tab" onclick="switchPage('medico',this)">
+    <i class="ti ti-clipboard-check"></i> Médico
+  </button>
+  <button class="nav-tab" id="btn-jefe" onclick="pedirPIN(this)">
+    <i class="ti ti-chart-bar"></i> Jefe
+  </button>
+  <div class="topbar-right">
+    <div class="status-dot" id="conn-dot"></div>
+    <span id="conn-label">Conectando...</span>
+  </div>
+</nav>
+
+<!-- ===== ASISTENTE ===== -->
+<div class="page active" id="page-asistente">
+
+  <div class="card">
+    <div class="card-title"><i class="ti ti-plus"></i> Agregar cirugía programada</div>
+    <div class="form-grid g3">
+      <div><label>Fecha</label><input type="date" id="f-fecha"></div>
+      <div><label>Quirófano</label>
+        <select id="f-qx">
+          <option value="">Seleccionar</option>
+          <option>Qx 1</option><option>Qx 2</option><option>Qx 3</option><option>Qx 4</option>
+        </select>
+      </div>
+      <div><label>Turno</label>
+        <select id="f-turno">
+          <option>Matutino</option><option>Vespertino</option><option>Nocturno A</option><option>Nocturno B</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid g2">
+      <div><label>Especialidad</label>
+        <select id="f-esp">
+          <option>Cirugía General</option><option>Traumatología y ortopedia</option>
+          <option>Ginecología y obstétrica</option><option>Urología</option>
+          <option>Neurocirugía</option><option>Oftalmología</option>
+          <option>Cirugía Pediátrica</option><option>Angiología</option>
+          <option>Oncocirugía</option><option>Cirugía cardiotorácica</option>
+          <option>Cirugía colorrectal</option><option>Cirugía vascular</option>
+          <option>Cirugía plástica y reconstructiva</option><option>Otra</option>
+        </select>
+      </div>
+      <div><label>Procedimiento</label><input type="text" id="f-proc" placeholder="Ej: Colecistectomía laparoscópica"></div>
+    </div>
+    <div class="form-grid g2">
+      <div><label>Paciente (iniciales o N° expediente)</label><input type="text" id="f-pac" placeholder="Ej: JGM o 00123456"></div>
+      <div><label>Hora programada de ingreso</label><input type="time" id="f-hora"></div>
+    </div>
+    <div class="form-grid g1">
+      <div><label>Observaciones / insumos requeridos</label>
+        <textarea id="f-obs" placeholder="Material especial, implantes, alertas prequirúrgicas..."></textarea>
+      </div>
+    </div>
+    <button class="btn btn-green" id="btn-agregar" onclick="agregarCirugia()">
+      <i class="ti ti-plus"></i> Agregar a programación
+    </button>
+  </div>
+
+  <div class="section-label">Programación del día</div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+    <input type="date" id="filtro-fecha-prog" style="width:160px" onchange="cargarTabla()">
+    <button class="btn btn-outline btn-sm" onclick="cargarTabla()"><i class="ti ti-refresh"></i> Actualizar</button>
+    <span id="prog-count" style="font-size:12px;color:var(--gray-text);margin-left:4px"></span>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="tbl" id="tabla-prog">
+      <thead><tr>
+        <th>Hora</th><th>Qx</th><th>Paciente</th><th>Procedimiento</th>
+        <th>Especialidad</th><th>Tipo</th><th>Estado</th>
+      </tr></thead>
+      <tbody id="tbody-prog">
+        <tr><td colspan="8" class="empty-msg">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+  <div class="section-label"><i class="ti ti-alert-triangle" style="font-size:13px;vertical-align:-1px"></i> Registrar urgencia (no programada)</div>
+  <div class="card">
+    <div class="form-grid g3">
+      <div><label>Quirófano</label>
+        <select id="u-qx">
+          <option value="">Seleccionar</option>
+          <option>Qx 1</option><option>Qx 2</option><option>Qx 3</option><option>Qx 4</option>
+        </select>
+      </div>
+      <div><label>Especialidad</label>
+        <select id="u-esp">
+          <option>Cirugía General</option><option>Traumatología y ortopedia</option>
+          <option>Ginecología y obstétrica</option><option>Urología</option>
+          <option>Neurocirugía</option><option>Oftalmología</option>
+          <option>Cirugía Pediátrica</option><option>Angiología</option>
+          <option>Oncocirugía</option><option>Cirugía vascular</option><option>Otra</option>
+        </select>
+      </div>
+      <div><label>Hora de ingreso</label><input type="time" id="u-hora"></div>
+    </div>
+    <div class="form-grid g2">
+      <div><label>Procedimiento</label><input type="text" id="u-proc" placeholder="Ej: Apendicectomía"></div>
+      <div><label>Paciente (iniciales o N° expediente)</label><input type="text" id="u-pac" placeholder="Ej: MRL"></div>
+    </div>
+    <button class="btn btn-green" id="btn-urg" onclick="agregarUrgencia()">
+      <i class="ti ti-alert-triangle"></i> Registrar urgencia
+    </button>
+  </div>
+</div>
+
+<!-- ===== MÉDICO ===== -->
+<div class="page" id="page-medico">
+  <div class="card">
+    <div class="card-title"><i class="ti ti-filter"></i> Filtrar cirugías</div>
+    <div class="form-grid g3">
+      <div><label>Fecha</label><input type="date" id="m-fecha" onchange="cargarTodo().then(()=>cargarMedico())"></div>
+      <div><label>Quirófano</label>
+        <select id="m-qx" onchange="cargarMedico()">
+          <option value="">Todos</option>
+          <option>Qx 1</option><option>Qx 2</option><option>Qx 3</option><option>Qx 4</option>
+        </select>
+      </div>
+      <div><label>Estado</label>
+        <select id="m-estado" onchange="cargarMedico()">
+          <option value="pendiente">Pendientes de cierre</option>
+          <option value="todos">Todos</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="cargarTodo().then(()=>cargarMedico())"><i class="ti ti-refresh"></i> Actualizar lista</button>
+  </div>
+
+  <div id="medico-lista"></div>
+
+  <div id="cierre-panel" style="display:none">
+    <div class="section-label">Registrar cierre</div>
+    <div class="cierre-card">
+      <div style="font-size:14px;font-weight:600;margin-bottom:1rem" id="cf-titulo"></div>
+      <div class="form-grid g2">
+        <div><label>Hora real de ingreso a quirófano</label><input type="time" id="cf-inicio"></div>
+        <div><label>Hora de salida de quirófano</label><input type="time" id="cf-fin"></div>
+      </div>
+      <div class="form-grid g2">
+        <div>
+          <label>Resultado</label>
+          <select id="cf-resultado" onchange="toggleMotivo()">
+            <option value="realizada">Realizada</option>
+            <option value="suspendida">Suspendida</option>
+          </select>
+        </div>
+        <div id="motivo-wrap" style="display:none">
+          <label>Motivo de suspensión</label>
+          <select id="cf-motivo">
+            <option value="">Seleccionar motivo</option>
+            <option>Paciente no se presentó</option>
+            <option>Paciente inestable</option>
+            <option>Falta de tiempo quirúrgico</option>
+            <option>Falta de insumos o material</option>
+            <option>Error en programación</option>
+            <option>Falta de anestesiólogo</option>
+            <option>Equipo en mal estado</option>
+            <option>Falta de cama en recuperación</option>
+            <option>Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid g1">
+        <div><label>Diagnóstico postoperatorio / notas clínicas</label>
+          <textarea id="cf-notas" placeholder="CIE-10, hallazgos, incidencias intraoperatorias..."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" id="btn-cierre" onclick="guardarCierre()"><i class="ti ti-check"></i> Guardar cierre</button>
+        <button class="btn btn-outline" onclick="cerrarPanel()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== JEFE ===== -->
+<div class="page" id="page-jefe">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:18px;font-weight:600">Dashboard quirúrgico</div>
+      <div style="font-size:12px;color:var(--gray-text)" id="dash-sub">—</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="date" id="dash-desde" style="width:140px;font-size:12px">
+      <span style="font-size:12px;color:var(--gray-text)">a</span>
+      <input type="date" id="dash-hasta" style="width:140px;font-size:12px">
+      <button class="btn btn-green btn-sm" onclick="renderDash()"><i class="ti ti-refresh"></i> Actualizar</button>
+    </div>
+  </div>
+
+  <div class="metrics-grid" id="dash-metrics"></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+    <div class="card">
+      <div class="card-title" style="font-size:13px">Cirugías por especialidad</div>
+      <div class="chart-wrap"><canvas id="chart-esp" role="img" aria-label="Cirugías por especialidad"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:13px">Resultado por quirófano</div>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:#1D9E75"></span>Realizadas</span>
+        <span><span class="legend-dot" style="background:#E24B4A"></span>Suspendidas</span>
+        <span><span class="legend-dot" style="background:#BA7517"></span>Pendientes</span>
+      </div>
+      <div class="chart-wrap" style="height:180px"><canvas id="chart-qx" role="img" aria-label="Resultado por quirófano"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="font-size:13px">Motivos de suspensión</div>
+    <div class="chart-wrap" style="height:160px"><canvas id="chart-motivos" role="img" aria-label="Motivos de suspensión"></canvas></div>
+  </div>
+
+  <div class="section-label">Detalle completo</div>
+  <div class="card" style="padding:0;overflow:auto">
+    <table class="tbl" id="tabla-detalle">
+      <thead><tr>
+        <th>Fecha</th><th>Qx</th><th>Turno</th><th>Paciente</th>
+        <th>Procedimiento</th><th>Especialidad</th><th>Tipo</th>
+        <th>Resultado</th><th>Inicio</th><th>Fin</th><th>Duración</th><th>Motivo</th>
+      </tr></thead>
+      <tbody id="tbody-detalle"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
+const API_URL = 'https://script.google.com/macros/s/AKfycbxYG9OEOAOTWpfDoUd2c93VVJ7oovTzNpYBWQvv85zoEFThsAHoThq7Xr1edkIGr66d/exec';
+// ─────────────────────────────────────────────────────────────────────────────
+
+let DB = [];
+let cierreId = null;
+let chartEsp, chartQx, chartMotivos;
+
+const hoy = () => new Date().toISOString().slice(0,10);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+const pad = n => String(n).padStart(2,'0');
+
+function horaAMin(h) {
+  if (!h || typeof h !== 'string') return null;
+  const parts = h.split(':');
+  if (parts.length < 2) return null;
+  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+}
+
+function durMin(ini, fin) {
+  const a = horaAMin(ini), b = horaAMin(fin);
+  if (a == null || b == null) return null;
+  const d = b - a;
+  return d > 0 ? d : d + 1440;
+}
+
+// ── CONEXIÓN / API ─────────────────────────────────────────────────────────────
+function setConn(ok) {
+  const dot = document.getElementById('conn-dot');
+  const lbl = document.getElementById('conn-label');
+  dot.className = 'status-dot ' + (ok ? 'ok' : 'err');
+  lbl.textContent = ok ? 'Conectado' : 'Sin conexión';
+}
+
+async function apiGet(params) {
+  const url = API_URL + '?' + new URLSearchParams(params);
+  const r = await fetch(url);
+  return r.json();
+}
+
+async function apiPost(body) {
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+async function cargarTodo() {
+  try {
+    const res = await apiGet({ action: 'getAll' });
+    DB = (res.rows || []).map(r => {
+      const fixFecha = v => String(v || '').slice(0,10);
+      const fixHora = v => {
+        if (v === '' || v === null || v === undefined) return '';
+        const s = String(v).trim();
+        if (s.includes(':')) return s.slice(0,5);
+        return s;
+      };
+      return { ...r,
+        fecha: fixFecha(r.fecha),
+        horaProg: fixHora(r.horaProg),
+        horaInicio: fixHora(r.horaInicio),
+        horaFin: fixHora(r.horaFin)
+      };
+    });
+    setConn(true);
+  } catch(e) {
+    setConn(false);
+  }
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────────
+function toast(msg, dur = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ── NAVEGACIÓN ─────────────────────────────────────────────────────────────────
+function switchPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+  cargarTodo().then(() => {
+    if (id === 'asistente') cargarTabla();
+    if (id === 'medico') cargarMedico();
+    if (id === 'jefe') renderDash();
+  });
+}
+
+// ── ASISTENTE ──────────────────────────────────────────────────────────────────
+async function agregarCirugia() {
+  const fecha = document.getElementById('f-fecha').value;
+  const qx    = document.getElementById('f-qx').value;
+  const turno = document.getElementById('f-turno').value;
+  const esp   = document.getElementById('f-esp').value;
+  const proc  = document.getElementById('f-proc').value.trim();
+  const pac   = document.getElementById('f-pac').value.trim();
+  const hora  = document.getElementById('f-hora').value;
+  const obs   = document.getElementById('f-obs').value.trim();
+  if (!fecha || !qx || !proc || !pac) { toast('⚠ Completa fecha, quirófano, procedimiento y paciente.'); return; }
+
+  const btn = document.getElementById('btn-agregar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+  const row = { id: uid(), tipo: 'programada', fecha, qx, turno, especialidad: esp,
+    procedimiento: proc, paciente: pac, horaProg: hora, observaciones: obs,
+    estado: 'pendiente', resultado: '', horaInicio: '', horaFin: '',
+    motivo: '', notas: '', timestamp: new Date().toISOString() };
+  try {
+    await apiPost({ action: 'insert', row });
+    DB.push(row);
+    toast('✓ Cirugía agregada');
+    limpiarFormProg();
+    cargarTabla();
+  } catch(e) { toast('Error al guardar. Verifica conexión.'); }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-plus"></i> Agregar a programación';
+}
+
+async function agregarUrgencia() {
+  const qx   = document.getElementById('u-qx').value;
+  const esp  = document.getElementById('u-esp').value;
+  const hora = document.getElementById('u-hora').value;
+  const proc = document.getElementById('u-proc').value.trim();
+  const pac  = document.getElementById('u-pac').value.trim();
+  if (!qx || !proc || !pac) { toast('⚠ Completa quirófano, procedimiento y paciente.'); return; }
+
+  const btn = document.getElementById('btn-urg');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+  const row = { id: uid(), tipo: 'urgencia', fecha: hoy(), qx, turno: 'urgencia',
+    especialidad: esp, procedimiento: proc, paciente: pac, horaProg: hora,
+    observaciones: '', estado: 'pendiente', resultado: '', horaInicio: hora,
+    horaFin: '', motivo: '', notas: '', timestamp: new Date().toISOString() };
+  try {
+    await apiPost({ action: 'insert', row });
+    DB.push(row);
+    toast('✓ Urgencia registrada');
+    ['u-qx','u-proc','u-pac','u-hora'].forEach(id => document.getElementById(id).value = '');
+    cargarTabla();
+  } catch(e) { toast('Error al guardar.'); }
+  btn.disabled = false; btn.innerHTML = '<i class="ti ti-alert-triangle"></i> Registrar urgencia';
+}
+
+function limpiarFormProg() {
+  ['f-proc','f-pac','f-hora','f-obs'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-qx').value = '';
+}
+
+function cargarTabla() {
+  const fecha = document.getElementById('filtro-fecha-prog').value || hoy();
+  const filas = DB.filter(r => r.fecha === fecha)
+    .sort((a, b) => (a.horaProg || '99:99').localeCompare(b.horaProg || '99:99'));
+  const tbody = document.getElementById('tbody-prog');
+  document.getElementById('prog-count').textContent = filas.length + ' cirugía(s)';
+  if (!filas.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">Sin cirugías para esta fecha.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filas.map(r => {
+    const tipo = r.tipo === 'urgencia'
+      ? '<span class="badge b-urg"><i class="ti ti-alert-triangle" style="font-size:10px"></i> Urgencia</span>'
+      : '<span class="badge b-prog">Programada</span>';
+    const estado = r.estado === 'cerrada'
+      ? (r.resultado === 'realizada' ? '<span class="badge b-real">Realizada</span>' : '<span class="badge b-susp">Suspendida</span>')
+      : '<span class="badge b-pend">Pendiente</span>';
+    return `<tr>
+      <td>${r.horaProg || '—'}</td>
+      <td><span class="tag-qx">${r.qx}</span></td>
+      <td style="font-weight:500">${r.paciente}</td>
+      <td>${r.procedimiento}</td>
+      <td style="color:var(--gray-text);font-size:12px">${r.especialidad}</td>
+      <td>${tipo}</td>
+      <td>${estado}</td>
+      
+    </tr>`;
+  }).join('');
+}
+
+async function eliminar(id) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  try {
+    await apiPost({ action: 'delete', id });
+    DB = DB.filter(r => r.id !== id);
+    cargarTabla();
+    toast('Registro eliminado');
+  } catch(e) { toast('Error al eliminar.'); }
+}
+
+// ── MÉDICO ─────────────────────────────────────────────────────────────────────
+function cargarMedico() {
+  const fecha  = document.getElementById('m-fecha').value || hoy();
+  const qxFil  = document.getElementById('m-qx').value;
+  const estFil = document.getElementById('m-estado').value;
+  let lista = DB.filter(r => r.fecha === fecha);
+  if (qxFil) lista = lista.filter(r => r.qx === qxFil);
+  if (estFil === 'pendiente') lista = lista.filter(r => r.estado === 'pendiente');
+  lista.sort((a, b) => (a.horaProg || '').localeCompare(b.horaProg || ''));
+
+  const cont = document.getElementById('medico-lista');
+  if (!lista.length) {
+    cont.innerHTML = '<p class="empty-msg">No hay cirugías que coincidan con los filtros.</p>';
+    return;
+  }
+  cont.innerHTML = lista.map(r => {
+    const tipo = r.tipo === 'urgencia'
+      ? '<span class="badge b-urg"><i class="ti ti-alert-triangle" style="font-size:10px"></i> Urgencia</span>'
+      : '<span class="badge b-prog">Programada</span>';
+    const estado = r.estado === 'cerrada'
+      ? (r.resultado === 'realizada' ? '<span class="badge b-real">Realizada</span>' : '<span class="badge b-susp">Suspendida</span>')
+      : '<span class="badge b-pend">Pendiente de cierre</span>';
+    const dur = r.horaInicio && r.horaFin ? ' · ' + (durMin(r.horaInicio, r.horaFin) || '?') + ' min' : '';
+    const detalle = r.estado === 'cerrada'
+      ? `<div style="font-size:11px;color:var(--gray-text);margin-top:6px">
+           <i class="ti ti-clock" style="font-size:12px;vertical-align:-1px"></i>
+           ${r.horaInicio || '—'} – ${r.horaFin || '—'}${dur}
+           ${r.motivo ? ' · ' + r.motivo : ''}
+           ${r.notas ? ' · ' + r.notas : ''}
+         </div>`
+      : `<button class="btn btn-green btn-sm" style="margin-top:10px" onclick="abrirCierre('${r.id}')">
+           <i class="ti ti-clipboard-check"></i> Registrar cierre
+         </button>`;
+    return `<div class="card" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:14px;font-weight:600">${r.procedimiento}
+            <span style="font-size:12px;font-weight:400;color:var(--gray-text)"> ${r.paciente}</span>
+          </div>
+          <div style="font-size:12px;color:var(--gray-text);margin-top:2px">
+            ${r.fecha} · <span class="tag-qx">${r.qx}</span> · ${r.especialidad}
+            ${r.horaProg ? ' · Prog. ' + r.horaProg : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">${tipo}${estado}</div>
+      </div>
+      ${detalle}
+    </div>`;
+  }).join('');
+}
+
+function abrirCierre(id) {
+  cierreId = id;
+  const r = DB.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('cf-titulo').innerHTML =
+    `<i class="ti ti-clipboard-check" style="color:var(--green)"></i> Cierre — ${r.procedimiento} · ${r.paciente}`;
+  document.getElementById('cf-inicio').value = r.horaInicio || r.horaProg || '';
+  document.getElementById('cf-fin').value = r.horaFin || '';
+  document.getElementById('cf-resultado').value = 'realizada';
+  document.getElementById('cf-motivo').value = '';
+  document.getElementById('cf-notas').value = r.notas || '';
+  document.getElementById('motivo-wrap').style.display = 'none';
+  document.getElementById('cierre-panel').style.display = 'block';
+  document.getElementById('cierre-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cerrarPanel() {
+  document.getElementById('cierre-panel').style.display = 'none';
+  cierreId = null;
+}
+
+function toggleMotivo() {
+  const v = document.getElementById('cf-resultado').value;
+  document.getElementById('motivo-wrap').style.display = v === 'suspendida' ? 'block' : 'none';
+}
+
+async function guardarCierre() {
+  if (!cierreId) return;
+  const inicio    = document.getElementById('cf-inicio').value;
+  const fin       = document.getElementById('cf-fin').value;
+  const resultado = document.getElementById('cf-resultado').value;
+  const motivo    = document.getElementById('cf-motivo').value;
+  const notas     = document.getElementById('cf-notas').value.trim();
+  if (!inicio || !fin) { toast('⚠ Registra hora de inicio y fin.'); return; }
+  if (resultado === 'suspendida' && !motivo) { toast('⚠ Selecciona el motivo de suspensión.'); return; }
+
+  const btn = document.getElementById('btn-cierre');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+  const fields = { estado: 'cerrada', resultado, horaInicio: inicio, horaFin: fin, motivo, notas };
+  try {
+    await apiPost({ action: 'update', id: cierreId, fields });
+    const idx = DB.findIndex(r => r.id === cierreId);
+    if (idx >= 0) DB[idx] = { ...DB[idx], ...fields };
+    toast('✓ Cierre guardado');
+    cerrarPanel();
+    cargarMedico();
+  } catch(e) { toast('Error al guardar el cierre.'); }
+  btn.disabled = false; btn.innerHTML = '<i class="ti ti-check"></i> Guardar cierre';
+}
+
+// ── JEFE / DASHBOARD ───────────────────────────────────────────────────────────
+function renderDash() {
+  const desde = document.getElementById('dash-desde').value;
+  const hasta = document.getElementById('dash-hasta').value;
+  let data = DB;
+  if (desde) data = data.filter(r => r.fecha >= desde);
+  if (hasta) data = data.filter(r => r.fecha <= hasta);
+
+  const total      = data.length;
+  const prog       = data.filter(r => r.tipo === 'programada');
+  const urg        = data.filter(r => r.tipo === 'urgencia');
+  const realizadas = data.filter(r => r.resultado === 'realizada');
+  const suspendidas= data.filter(r => r.resultado === 'suspendida');
+  const pendientes = data.filter(r => r.estado === 'pendiente');
+  const pctSusp    = prog.length ? Math.round(suspendidas.filter(r => r.tipo === 'programada').length / prog.length * 100) : null;
+  const durs       = realizadas.filter(r => r.horaInicio && r.horaFin && r.horaInicio !== r.horaFin && r.resultado === 'realizada').map(r => durMin(r.horaInicio, r.horaFin)).filter(d => d && d > 0 && d < 600);
+  const promDur    = durs.length ? Math.round(durs.reduce((a,b) => a+b, 0) / durs.length) : null;
+
+  document.getElementById('dash-sub').textContent =
+    (desde && hasta ? desde + ' al ' + hasta : 'Todo el período') +
+    ' · ' + total + ' cirugías · ' + urg.length + ' urgencias';
+
+  const classFor = (v, ok, warn) => v == null ? '' : v <= ok ? 'mv-ok' : v <= warn ? 'mv-warn' : 'mv-bad';
+  document.getElementById('dash-metrics').innerHTML = `
+    <div class="metric">
+      <div class="metric-label">Total cirugías</div>
+      <div class="metric-val">${total}</div>
+      <div class="metric-sub">${prog.length} prog · ${urg.length} urgencias</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Pendientes de cierre</div>
+      <div class="metric-val ${pendientes.length > 0 ? 'mv-warn' : 'mv-ok'}">${pendientes.length}</div>
+      <div class="metric-sub">${realizadas.length} realizadas · ${suspendidas.length} suspendidas</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">% suspensión (prog.)</div>
+      <div class="metric-val ${classFor(pctSusp, 20, 35)}">${pctSusp != null ? pctSusp + '%' : '—'}</div>
+      <div class="metric-sub">Meta: ≤ 20%</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Duración promedio</div>
+      <div class="metric-val">${promDur != null ? promDur + ' min' : '—'}</div>
+      <div class="metric-sub">${durs.length} cirugías con datos</div>
+    </div>
+  `;
+
+  // Gráfica especialidad
+  const espMap = {};
+  data.forEach(r => { espMap[r.especialidad] = (espMap[r.especialidad] || 0) + 1; });
+  const espLabels = Object.keys(espMap).sort((a,b) => espMap[b] - espMap[a]).slice(0, 8);
+  const espData   = espLabels.map(e => espMap[e]);
+  if (chartEsp) chartEsp.destroy();
+  chartEsp = new Chart(document.getElementById('chart-esp'), {
+    type: 'bar',
+    data: { labels: espLabels, datasets: [{ data: espData, backgroundColor: '#1D9E75', borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { font: { size: 11 }, autoSkip: false, maxRotation: 40 } }, y: { ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // Gráfica quirófano
+  const qxs = ['Qx 1', 'Qx 2', 'Qx 3', 'Qx 4'];
+  const qxReal  = qxs.map(q => data.filter(r => r.qx === q && r.resultado === 'realizada').length);
+  const qxSusp  = qxs.map(q => data.filter(r => r.qx === q && r.resultado === 'suspendida').length);
+  const qxPend  = qxs.map(q => data.filter(r => r.qx === q && r.estado === 'pendiente').length);
+  if (chartQx) chartQx.destroy();
+  chartQx = new Chart(document.getElementById('chart-qx'), {
+    type: 'bar',
+    data: { labels: qxs, datasets: [
+      { label: 'Realizadas', data: qxReal, backgroundColor: '#1D9E75', borderRadius: 4 },
+      { label: 'Suspendidas', data: qxSusp, backgroundColor: '#E24B4A', borderRadius: 4 },
+      { label: 'Pendientes', data: qxPend, backgroundColor: '#BA7517', borderRadius: 4 }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { stacked: true }, y: { stacked: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // Gráfica motivos
+  const mMap = {};
+  suspendidas.forEach(r => { if (r.motivo) mMap[r.motivo] = (mMap[r.motivo] || 0) + 1; });
+  const mLabels = Object.keys(mMap).sort((a,b) => mMap[b] - mMap[a]);
+  const mData   = mLabels.map(k => mMap[k]);
+  if (chartMotivos) chartMotivos.destroy();
+  if (mLabels.length) {
+    chartMotivos = new Chart(document.getElementById('chart-motivos'), {
+      type: 'bar',
+      data: { labels: mLabels, datasets: [{ data: mData, backgroundColor: '#E24B4A', borderRadius: 4 }] },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { ticks: { stepSize: 1 } }, y: { ticks: { font: { size: 11 } } } }
+      }
+    });
+  }
+
+  // Tabla detalle
+  const tbody = document.getElementById('tbody-detalle');
+  tbody.innerHTML = [...data]
+    .sort((a, b) => b.fecha.localeCompare(a.fecha) || (a.horaProg || '').localeCompare(b.horaProg || ''))
+    .map(r => {
+      const tipo  = r.tipo === 'urgencia' ? '<span class="badge b-urg">Urgencia</span>' : '<span class="badge b-prog">Prog.</span>';
+      const res   = r.estado !== 'cerrada' ? '<span class="badge b-pend">Pendiente</span>'
+        : r.resultado === 'realizada' ? '<span class="badge b-real">Realizada</span>' : '<span class="badge b-susp">Suspendida</span>';
+      const dur   = r.horaInicio && r.horaFin ? (durMin(r.horaInicio, r.horaFin) || '—') + ' min' : '—';
+      return `<tr>
+        <td style="font-size:12px">${r.fecha}</td>
+        <td><span class="tag-qx">${r.qx}</span></td>
+        <td style="font-size:11px;color:var(--gray-text)">${r.turno}</td>
+        <td style="font-weight:500;font-size:12px">${r.paciente}</td>
+        <td style="font-size:12px">${r.procedimiento}</td>
+        <td style="font-size:11px;color:var(--gray-text)">${r.especialidad}</td>
+        <td>${tipo}</td><td>${res}</td>
+        <td style="font-size:12px">${r.horaInicio || '—'}</td>
+        <td style="font-size:12px">${r.horaFin || '—'}</td>
+        <td style="font-size:12px">${dur}</td>
+        <td style="font-size:11px;color:var(--gray-text)">${r.motivo || '—'}</td>
+      </tr>`;
+    }).join('');
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+document.getElementById('f-fecha').value = hoy();
+document.getElementById('filtro-fecha-prog').value = hoy();
+document.getElementById('m-fecha').value = hoy();
+const primerDiaMes = hoy().slice(0,8) + '01';
+document.getElementById('dash-desde').value = primerDiaMes;
+document.getElementById('dash-hasta').value = hoy();
+
+cargarTodo().then(() => {
+  cargarTabla();
+  if (API_URL === 'https://script.google.com/macros/s/AKfycbxYG9OEOAOTWpfDoUd2c93VVJ7oovTzNpYBWQvv85zoEFThsAHoThq7Xr1edkIGr66d/exec') {
+    
+  }
+});
+
+const PIN_CORRECTO = '2710';
+let pinBtnRef = null;
+let jefeBloqueado = true;
+
+function pedirPIN(btn) {
+  if (!jefeBloqueado) {
+    switchPage('jefe', btn);
+    return;
+  }
+  pinBtnRef = btn;
+  document.getElementById('pin-modal').style.display = 'flex';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').style.display = 'none';
+  setTimeout(() => document.getElementById('pin-input').focus(), 100);
+}
+
+function validarPIN() {
+  const val = document.getElementById('pin-input').value;
+  if (val === PIN_CORRECTO) {
+    jefeBloqueado = false;
+    cerrarPIN();
+    switchPage('jefe', pinBtnRef);
+  } else {
+    document.getElementById('pin-error').style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+function cerrarPIN() {
+  document.getElementById('pin-modal').style.display = 'none';
+}
+
+</script>
+
+<div style="position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:10px;color:#bbb;padding:4px 0;background:rgba(255,255,255,0.85);border-top:1px solid #eee;z-index:50;pointer-events:none">
+  Aplicación desarrollada por Q.F.B. Protacio Serna Ramírez para el Departamento de Quirófano del Hospital General Reynosa Dr. José María Cantú Garza
+</div>
+
+<div id="pin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:2rem;width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <div style="font-size:16px;font-weight:600;margin-bottom:4px;color:#1a1a18">Acceso restringido</div>
+    <div style="font-size:13px;color:#5F5E5A;margin-bottom:1.25rem">Dashboard — solo personal autorizado</div>
+    <label style="font-size:12px;color:#5F5E5A;display:block;margin-bottom:4px">PIN de acceso</label>
+    <input type="password" id="pin-input" maxlength="8" placeholder="••••••••"
+      style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:18px;letter-spacing:4px;text-align:center;margin-bottom:12px"
+      onkeydown="if(event.key==='Enter')validarPIN()">
+    <div id="pin-error" style="color:#E24B4A;font-size:12px;margin-bottom:8px;display:none">PIN incorrecto. Intenta de nuevo.</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="validarPIN()" style="flex:1;background:#007A4D;color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500">Entrar</button>
+      <button onclick="cerrarPIN()" style="flex:1;background:#f1efe8;color:#5F5E5A;border:1px solid #ddd;padding:10px;border-radius:8px;cursor:pointer;font-size:14px">Cancelar</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
