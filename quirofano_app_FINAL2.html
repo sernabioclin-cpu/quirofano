@@ -165,17 +165,8 @@ function cerrarPIN() {
   <button class="nav-tab active" onclick="switchPage('asistente',this)">
     <i class="ti ti-calendar-event"></i> Asistente
   </button>
-  <button class="nav-tab" onclick="pedirPINEsp('cirugia',this)">
-    <i class="ti ti-scalpel"></i> Cirugía
-  </button>
-  <button class="nav-tab" onclick="pedirPINEsp('traumatologia',this)">
-    <i class="ti ti-bone"></i> Traumatología
-  </button>
-  <button class="nav-tab" onclick="pedirPINEsp('ginecologia',this)">
-    <i class="ti ti-heart"></i> Ginecología
-  </button>
-  <button class="nav-tab" onclick="pedirPINEsp('anestesia',this)">
-    <i class="ti ti-activity"></i> Anestesiología
+  <button class="nav-tab" onclick="switchPage('medico',this)">
+    <i class="ti ti-clipboard-check"></i> Médico
   </button>
   <button class="nav-tab" id="btn-jefe" onclick="pedirPIN(this)">
     <i class="ti ti-chart-bar"></i> Jefe
@@ -353,67 +344,6 @@ function cerrarPIN() {
   </div>
 </div>
 
-
-<!-- CIRUGÍA -->
-<div class="page" id="page-cirugia">
-  <div class="card" style="margin-bottom:1rem">
-    <div style="display:flex;align-items:center;gap:10px">
-      <i class="ti ti-scalpel" style="font-size:20px;color:var(--green)"></i>
-      <div>
-        <div style="font-weight:600;font-size:15px">Cirugía General</div>
-        <div style="font-size:12px;color:var(--gray-text)">Solo cirugías de tu servicio</div>
-      </div>
-    </div>
-  </div>
-  <div id="lista-cirugia"></div>
-  <div id="cierre-cirugia" style="display:none"></div>
-</div>
-
-<!-- TRAUMATOLOGÍA -->
-<div class="page" id="page-traumatologia">
-  <div class="card" style="margin-bottom:1rem">
-    <div style="display:flex;align-items:center;gap:10px">
-      <i class="ti ti-bone" style="font-size:20px;color:var(--green)"></i>
-      <div>
-        <div style="font-weight:600;font-size:15px">Traumatología y Ortopedia</div>
-        <div style="font-size:12px;color:var(--gray-text)">Solo cirugías de tu servicio</div>
-      </div>
-    </div>
-  </div>
-  <div id="lista-traumatologia"></div>
-  <div id="cierre-traumatologia" style="display:none"></div>
-</div>
-
-<!-- GINECOLOGÍA -->
-<div class="page" id="page-ginecologia">
-  <div class="card" style="margin-bottom:1rem">
-    <div style="display:flex;align-items:center;gap:10px">
-      <i class="ti ti-heart" style="font-size:20px;color:var(--green)"></i>
-      <div>
-        <div style="font-weight:600;font-size:15px">Ginecología y Obstétrica</div>
-        <div style="font-size:12px;color:var(--gray-text)">Solo cirugías de tu servicio</div>
-      </div>
-    </div>
-  </div>
-  <div id="lista-ginecologia"></div>
-  <div id="cierre-ginecologia" style="display:none"></div>
-</div>
-
-<!-- ANESTESIOLOGÍA -->
-<div class="page" id="page-anestesia">
-  <div class="card" style="margin-bottom:1rem">
-    <div style="display:flex;align-items:center;gap:10px">
-      <i class="ti ti-activity" style="font-size:20px;color:var(--green)"></i>
-      <div>
-        <div style="font-weight:600;font-size:15px">Anestesiología</div>
-        <div style="font-size:12px;color:var(--gray-text)">Todas las especialidades</div>
-      </div>
-    </div>
-  </div>
-  <div id="lista-anestesia"></div>
-  <div id="cierre-anestesia" style="display:none"></div>
-</div>
-
 <!-- ===== JEFE ===== -->
 <div class="page" id="page-jefe">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
@@ -571,7 +501,6 @@ function switchPage(id, btn) {
     if (id === 'asistente') cargarTabla();
     if (id === 'medico') cargarMedico();
     if (id === 'jefe') renderDash();
-    if (['cirugia','traumatologia','ginecologia','anestesia'].includes(id)) cargarEsp(id);
   });
 }
 
@@ -910,180 +839,6 @@ function renderDash() {
     }).join('');
 }
 
-
-// ── CONFIGURACIÓN DE PINs POR ESPECIALIDAD ────────────────────────────────
-const PINS_ESP = {
-  cirugia:       '4821',
-  traumatologia: '3694',
-  ginecologia:   '7152',
-  anestesia:     '9037',
-};
-const ESP_LABELS = {
-  cirugia:       'Cirugía General',
-  traumatologia: 'Traumatología y ortopedia',
-  ginecologia:   'Ginecología y obstétrica',
-  anestesia:     null, // null = todas
-};
-const unlockedEsp = {};
-let pinEspRef = null;
-let pinEspId  = null;
-
-function pedirPINEsp(espId, btn) {
-  if (unlockedEsp[espId]) { switchPage(espId, btn); return; }
-  pinEspId  = espId;
-  pinEspRef = btn;
-  document.getElementById('pin-esp-titulo').textContent =
-    espId.charAt(0).toUpperCase() + espId.slice(1);
-  document.getElementById('pin-esp-input').value = '';
-  document.getElementById('pin-esp-error').style.display = 'none';
-  document.getElementById('pin-esp-modal').style.display = 'flex';
-  setTimeout(() => document.getElementById('pin-esp-input').focus(), 100);
-}
-
-function validarPINEsp() {
-  const val = document.getElementById('pin-esp-input').value;
-  if (val === PINS_ESP[pinEspId]) {
-    unlockedEsp[pinEspId] = true;
-    cerrarPINEsp();
-    switchPage(pinEspId, pinEspRef);
-    cargarEsp(pinEspId);
-  } else {
-    document.getElementById('pin-esp-error').style.display = 'block';
-    document.getElementById('pin-esp-input').value = '';
-    document.getElementById('pin-esp-input').focus();
-  }
-}
-
-function cerrarPINEsp() {
-  document.getElementById('pin-esp-modal').style.display = 'none';
-}
-
-// Especialidades a mostrar: null = todas
-function cargarEsp(espId) {
-  const filtroEsp = ESP_LABELS[espId];
-  const hoy2 = new Date().toISOString().slice(0,10);
-  let lista = DB.filter(r => r.estado === 'pendiente');
-  if (filtroEsp) lista = lista.filter(r => r.especialidad === filtroEsp);
-  lista.sort((a,b) => (a.horaProg||'').localeCompare(b.horaProg||''));
-
-  const cont = document.getElementById('lista-' + espId);
-  const panelCierre = document.getElementById('cierre-' + espId);
-
-  if (!lista.length) {
-    cont.innerHTML = '<p class=\"empty-msg\" style=\"padding:1rem 0\">No hay cirugías pendientes de cierre.</p>';
-    return;
-  }
-
-  cont.innerHTML = lista.map(r => {
-    const tipo = r.tipo === 'urgencia'
-      ? '<span class=\"badge b-urg\"><i class=\"ti ti-alert-triangle\" style=\"font-size:10px\"></i> Urgencia</span>'
-      : '<span class=\"badge b-prog\">Programada</span>';
-    return `<div class=\"card\" style=\"margin-bottom:8px\">
-      <div style=\"display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap\">
-        <div>
-          <div style=\"font-size:14px;font-weight:600\">${r.procedimiento}
-            <span style=\"font-size:12px;font-weight:400;color:var(--gray-text)\"> ${r.paciente}</span>
-          </div>
-          <div style=\"font-size:12px;color:var(--gray-text);margin-top:2px\">
-            ${r.fecha} · <span class=\"tag-qx\">${r.qx}</span> · ${r.especialidad}
-            ${r.horaProg ? ' · Prog. ' + r.horaProg : ''}
-          </div>
-        </div>
-        <div style=\"display:flex;gap:6px;align-items:center\">${tipo}<span class=\"badge b-pend\">Pendiente</span></div>
-      </div>
-      <button class=\"btn btn-green btn-sm\" style=\"margin-top:10px\"
-        onclick=\"abrirCierreEsp('${r.id}','${espId}')\">
-        <i class=\"ti ti-clipboard-check\"></i> Registrar cierre
-      </button>
-    </div>`;
-  }).join('');
-}
-
-function abrirCierreEsp(id, espId) {
-  cierreId = id;
-  const r = DB.find(x => x.id === id);
-  if (!r) return;
-  const panel = document.getElementById('cierre-' + espId);
-  panel.style.display = 'block';
-  panel.innerHTML = `
-    <div class=\"section-label\">Registrar cierre</div>
-    <div class=\"cierre-card\">
-      <div style=\"font-size:14px;font-weight:600;margin-bottom:1rem\">
-        <i class=\"ti ti-clipboard-check\" style=\"color:var(--green)\"></i>
-        Cierre — ${r.procedimiento} · ${r.paciente}
-      </div>
-      <div class=\"form-grid g2\">
-        <div><label>Hora real de ingreso a quirófano</label>
-          <input type=\"time\" id=\"cfe-inicio\" value=\"${r.horaInicio||r.horaProg||''}\"></div>
-        <div><label>Hora de salida de quirófano</label>
-          <input type=\"time\" id=\"cfe-fin\"></div>
-      </div>
-      <div class=\"form-grid g2\">
-        <div><label>Resultado</label>
-          <select id=\"cfe-resultado\" onchange=\"toggleMotivoEsp()\">
-            <option value=\"realizada\">Realizada</option>
-            <option value=\"suspendida\">Suspendida</option>
-          </select>
-        </div>
-        <div id=\"cfe-motivo-wrap\" style=\"display:none\">
-          <label>Motivo de suspensión</label>
-          <select id=\"cfe-motivo\">
-            <option value=\"\">Seleccionar motivo</option>
-            <option>Paciente no se presentó</option>
-            <option>Paciente inestable</option>
-            <option>Falta de tiempo quirúrgico</option>
-            <option>Falta de insumos o material</option>
-            <option>Error en programación</option>
-            <option>Falta de anestesiólogo</option>
-            <option>Equipo en mal estado</option>
-            <option>Falta de cama en recuperación</option>
-            <option>Cirujano hace cambio en la programación</option>
-            <option>Otro</option>
-          </select>
-        </div>
-      </div>
-      <div class=\"form-grid g1\">
-        <div><label>Diagnóstico postoperatorio / notas clínicas</label>
-          <textarea id=\"cfe-notas\" placeholder=\"CIE-10, hallazgos, incidencias intraoperatorias...\"></textarea>
-        </div>
-      </div>
-      <div class=\"btn-row\">
-        <button class=\"btn btn-green\" onclick=\"guardarCierreEsp('${espId}')\">
-          <i class=\"ti ti-check\"></i> Guardar cierre
-        </button>
-        <button class=\"btn btn-outline\" onclick=\"document.getElementById('cierre-${espId}').style.display='none'\">Cancelar</button>
-      </div>
-    </div>`;
-  panel.scrollIntoView({behavior:'smooth'});
-}
-
-function toggleMotivoEsp() {
-  const v = document.getElementById('cfe-resultado').value;
-  document.getElementById('cfe-motivo-wrap').style.display = v === 'suspendida' ? 'block' : 'none';
-}
-
-async function guardarCierreEsp(espId) {
-  if (!cierreId) return;
-  const inicio    = document.getElementById('cfe-inicio').value;
-  const fin       = document.getElementById('cfe-fin').value;
-  const resultado = document.getElementById('cfe-resultado').value;
-  const motivo    = document.getElementById('cfe-motivo') ? document.getElementById('cfe-motivo').value : '';
-  const notas     = document.getElementById('cfe-notas').value.trim();
-  if (!inicio || !fin) { toast('⚠ Registra hora de inicio y fin.'); return; }
-  if (resultado === 'suspendida' && !motivo) { toast('⚠ Selecciona el motivo de suspensión.'); return; }
-  const fields = { estado: 'cerrada', resultado, horaInicio: inicio, horaFin: fin, motivo, notas };
-  try {
-    await apiPost({ action: 'update', id: cierreId, fields });
-    const idx = DB.findIndex(r => r.id === cierreId);
-    if (idx >= 0) DB[idx] = { ...DB[idx], ...fields };
-    toast('✓ Cierre guardado');
-    document.getElementById('cierre-' + espId).style.display = 'none';
-    cierreId = null;
-    await cargarTodo();
-    cargarEsp(espId);
-  } catch(e) { toast('Error al guardar el cierre.'); }
-}
-
 // ── INIT ───────────────────────────────────────────────────────────────────────
 document.getElementById('f-fecha').value = hoy();
 document.getElementById('filtro-fecha-prog').value = hoy();
@@ -1153,22 +908,5 @@ function cerrarPIN() {
     </div>
   </div>
 </div>
-
-<div id="pin-esp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:12px;padding:2rem;width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
-    <div style="font-size:16px;font-weight:600;margin-bottom:4px;color:#1a1a18">Acceso — <span id="pin-esp-titulo"></span></div>
-    <div style="font-size:13px;color:#5F5E5A;margin-bottom:1.25rem">Ingresa el PIN de tu servicio</div>
-    <label style="font-size:12px;color:#5F5E5A;display:block;margin-bottom:4px">PIN</label>
-    <input type="password" id="pin-esp-input" maxlength="8" placeholder="••••••••"
-      style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:18px;letter-spacing:4px;text-align:center;margin-bottom:12px"
-      onkeydown="if(event.key==='Enter')validarPINEsp()">
-    <div id="pin-esp-error" style="color:#E24B4A;font-size:12px;margin-bottom:8px;display:none">PIN incorrecto. Intenta de nuevo.</div>
-    <div style="display:flex;gap:8px">
-      <button onclick="validarPINEsp()" style="flex:1;background:#007A4D;color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500">Entrar</button>
-      <button onclick="cerrarPINEsp()" style="flex:1;background:#f1efe8;color:#5F5E5A;border:1px solid #ddd;padding:10px;border-radius:8px;cursor:pointer;font-size:14px">Cancelar</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
